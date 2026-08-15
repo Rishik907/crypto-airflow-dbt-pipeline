@@ -39,8 +39,3 @@ The `crypto_pipeline` DAG runs `fetch_prices` → `load_to_snowflake` → `dbt_r
 Lives in `dbt_crypto_analytics/`. To run locally outside Docker, copy
 `profiles.yml.example` to `~/.dbt/profiles.yml` and export the Snowflake env
 vars referenced in it.
-
-## Status
-
-See `project3-status.md` (tracked in the companion Claude Project, not this
-repo) for current build status and open decisions.
