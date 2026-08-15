@@ -1,0 +1,14 @@
+# Copy to ~/.dbt/profiles.yml (local dev) — inside Docker this is generated from env vars instead.
+crypto_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"
+      database: CRYPTO_ANALYTICS_DB
+      schema: analytics
+      threads: 4

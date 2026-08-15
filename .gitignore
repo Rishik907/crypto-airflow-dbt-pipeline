@@ -1,0 +1,25 @@
+# Airflow
+logs/
+plugins/
+airflow.cfg
+airflow.db
+standalone_admin_password.txt
+
+# Env / secrets
+.env
+*.pem
+
+# dbt
+dbt_crypto_analytics/target/
+dbt_crypto_analytics/dbt_packages/
+dbt_crypto_analytics/logs/
+profiles.yml
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store

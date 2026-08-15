@@ -1,0 +1,5 @@
+dbt-core==1.8.*
+dbt-snowflake==1.8.*
+pycoingecko==3.1.*
+snowflake-connector-python==3.*
+apache-airflow-providers-standard
