@@ -82,30 +82,69 @@ Retries: 3, with exponential backoff.
 
 ## Star schema
 
-- `fct_crypto_price` — grain: one row per coin per day
-- `dim_coin`
-- `dim_date`
+| Model | Type | Source | Grain / notes |
+|---|---|---|---|
+| `dim_coin` | Dimension | Static seed (`seeds/dim_coin_seed.csv`) | Fixed 10-coin list, surrogate `coin_key` |
+| `dim_date` | Dimension | Generated (`dbt_utils.date_spine`) | Full date spine, 2020-01-01 → 2030-12-31 |
+| `fct_crypto_price` | Fact | Inner-joins `int_crypto_daily_change` against both dims | One row per coin per day; rows failing to match either dim are dropped, not passed through with a null key |
 
-## Getting started
+## Data model layers
 
-```bash
-cp .env.example .env        # fill in Snowflake credentials
-docker compose up --build   # first run also creates the airflow admin user
+| Layer | Model | What it does |
+|---|---|---|
+| Staging | `stg_crypto_prices` | Incremental model, deduped on `coin_id + price_date` via surrogate `price_id`; merge strategy turns same-day re-triggers into upserts instead of duplicate rows |
+| Intermediate | `int_crypto_daily_change` | Adds a self-computed day-over-day % price change via `LAG()`, alongside CoinGecko's own trailing-24h % change for reference (related but not the same calculation — see model docs) |
+| Marts | `dim_coin`, `dim_date`, `fct_crypto_price` | Final star schema, ready for querying |
+
+## Project structure
+
+```
+.
+├── dags/
+│   ├── crypto_pipeline_dag.py
+│   └── scripts/
+│       ├── fetch_prices.py
+│       └── load_to_snowflake.py
+├── dbt_crypto_analytics/
+│   ├── seeds/
+│   │   └── dim_coin_seed.csv
+│   └── models/
+│       ├── staging/
+│       │   ├── sources.yml
+│       │   ├── stg_crypto_prices.sql
+│       │   └── stg_crypto_prices.yml
+│       ├── intermediate/
+│       │   ├── int_crypto_daily_change.sql
+│       │   └── int_crypto_daily_change.yml
+│       └── marts/
+│           ├── dim_coin.sql
+│           ├── dim_date.sql
+│           ├── fct_crypto_price.sql
+│           └── marts.yml
+├── docker-compose.yml
+├── Dockerfile
+└── README.md
 ```
 
-Airflow UI: http://localhost:8080 (user/pass: `airflow` / `airflow`, from
-`airflow-init` — change this before anything but local dev).
+## Running locally
 
-The `crypto_pipeline` DAG runs `fetch_prices` → `load_to_snowflake` → `dbt_run`
-(which also runs `dbt test`) on a daily schedule.
+1. Copy `.env.example` to `.env` and fill in Snowflake credentials
+   (`SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD`,
+   `SNOWFLAKE_ROLE`, `SNOWFLAKE_WAREHOUSE`)
+2. `docker compose up -d` — brings up Postgres, Airflow api-server,
+   scheduler, dag-processor, and triggerer (6 containers total)
+3. Open the Airflow UI at `http://localhost:8080`
+4. Unpause `crypto_pipeline_dag` and trigger a manual run to validate,
+   or let it run on its `30 0 * * *` UTC schedule
 
-## dbt project
+**Note:** the DAG only runs while the containers are up — there's no
+catch-up for runs missed while Docker is down (`catchup=False`).
 
-Lives in `dbt_crypto_analytics/`. To run locally outside Docker, copy
-`profiles.yml.example` to `~/.dbt/profiles.yml` and export the Snowflake env
-vars referenced in it.
+## Known limitations / open items
 
-## Status
-
-See `project3-status.md` (tracked in the companion Claude Project, not this
-repo) for current build status and open decisions.
+- No backfill strategy — `dim_date` covers a wide static range, but historic
+  price data isn't backfilled; the fact table only fills in from whenever
+  the DAG started running
+- Single daily snapshot per coin — not a true intraday time series
+- `day_over_day_pct_change` will be `null` for a coin's first day of data
+  (no prior snapshot to compare against)
