@@ -17,6 +17,7 @@ profiles.yml
 
 # Python
 __pycache__/
+__init__.py/
 *.pyc
 .venv/
 venv/

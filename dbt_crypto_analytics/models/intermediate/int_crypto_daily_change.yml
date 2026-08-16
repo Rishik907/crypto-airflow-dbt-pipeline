@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: int_crypto_daily_change
+    description: >
+      One row per coin per day, extending stg_crypto_prices with a
+      self-computed day-over-day % price change (via LAG on price_date,
+      partitioned by coin_id). Materialized as a view — LAG needs to see
+      full history each run, not just incrementally new rows, so this
+      isn't incremental like staging. day_over_day_pct_change will be
+      null for a coin's first-ever row (no prior day to compare against).
+    columns:
+      - name: price_id
+        description: Surrogate key inherited from stg_crypto_prices (coin_id + price_date). Unique.
+        tests:
+          - unique
+          - not_null
+
+      - name: coin_id
+        description: CoinGecko's canonical coin identifier (e.g. 'bitcoin').
+        tests:
+          - not_null
+
+      - name: symbol
+        description: Ticker symbol (e.g. 'btc').
+
+      - name: price_date
+        description: Calendar date of the snapshot (derived from fetched_at).
+        tests:
+          - not_null
+
+      - name: price_usd
+        description: Spot price in USD at fetch time, from stg_crypto_prices.
+        tests:
+          - not_null
+
+      - name: market_cap_usd
+        description: Market cap in USD at fetch time.
+
+      - name: coingecko_pct_change_24h
+        description: >
+          CoinGecko's own trailing 24h % change, computed off their
+          internal price history at fetch time. External reference only —
+          not derived from our own snapshots. Not the same as
+          day_over_day_pct_change.
+
+      - name: prev_price_usd
+        description: >
+          Prior day's price_usd for the same coin_id, via LAG(). Null for
+          a coin's first row in our data (no prior snapshot exists yet).
+
+      - name: day_over_day_pct_change
+        description: >
+          Our own day-over-day % change, computed as
+          (price_usd - prev_price_usd) / prev_price_usd * 100, based
+          entirely on our own daily snapshots (not CoinGecko's rolling
+          24h figure). Null when prev_price_usd is null (first row) or
+          zero (guarded against divide-by-zero).

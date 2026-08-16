@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: dim_coin
+    description: >
+      Coin dimension, built from a static seed (dim_coin_seed.csv) rather
+      than derived from fetched data — the 10-coin list is fixed and
+      decided, independent of what shows up in any given day's fetch.
+    columns:
+      - name: coin_key
+        description: Surrogate key on coin_id. Unique, used as the join key from fct_crypto_price.
+        tests:
+          - unique
+          - not_null
+
+      - name: coin_id
+        description: CoinGecko's canonical coin identifier (e.g. 'bitcoin').
+        tests:
+          - unique
+          - not_null
+
+      - name: symbol
+        description: Ticker symbol (e.g. 'btc').
+        tests:
+          - not_null
+
+      - name: coin_name
+        description: Human-readable coin name (e.g. 'Bitcoin').
+        tests:
+          - not_null

@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: fct_crypto_price
+    description: >
+      Fact table, grain: one row per coin per day. Inner-joins
+      int_crypto_daily_change against dim_coin and dim_date — a coin_id
+      or price_date that fails to match either dim is dropped rather
+      than passed through with a null key, so a row-count mismatch
+      against int_crypto_daily_change signals a real data-quality issue
+      (bad seed entry, date outside the 2020-2030 spine, etc.).
+    columns:
+      - name: price_id
+        description: Surrogate key inherited from staging/intermediate (coin_id + price_date). Grain key for this fact table.
+        tests:
+          - unique
+          - not_null
+
+      - name: coin_key
+        description: Foreign key to dim_coin.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_coin')
+              field: coin_key
+
+      - name: date_key
+        description: Foreign key to dim_date.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_key
+
+      - name: price_usd
+        description: Spot price in USD at fetch time.
+        tests:
+          - not_null
+
+      - name: market_cap_usd
+        description: Market cap in USD at fetch time.
+
+      - name: coingecko_pct_change_24h
+        description: CoinGecko's own trailing 24h % change. External reference only.
+
+      - name: prev_price_usd
+        description: Prior day's price for the same coin, via LAG in the intermediate layer. Null on a coin's first day.
+
+      - name: day_over_day_pct_change
+        description: Our own day-over-day % change, computed from our own daily snapshots. Null on a coin's first day.

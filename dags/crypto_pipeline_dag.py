@@ -30,7 +30,7 @@ with DAG(
     dag_id="crypto_pipeline",
     description="CoinGecko -> Snowflake -> dbt, daily",
     default_args=default_args,
-    schedule="@daily",  # TODO: confirm interval (open question in status file)
+    schedule="30 0 * * *", 
     start_date=datetime(2026, 8, 14),
     catchup=False,
     max_active_runs=1,
@@ -51,8 +51,9 @@ with DAG(
         task_id="dbt_run",
         cwd="/opt/airflow/dbt_crypto_analytics",
         bash_command=(
-            "dbt run --profiles-dir /opt/airflow/dbt_crypto_analytics "
-            "&& dbt test --profiles-dir /opt/airflow/dbt_crypto_analytics"
+            "dbt deps --profiles-dir /opt/airflow/dbt_crypto_analytics && "
+            "dbt run --profiles-dir /opt/airflow/dbt_crypto_analytics && "
+            "dbt test --profiles-dir /opt/airflow/dbt_crypto_analytics"
         ),
     )
 

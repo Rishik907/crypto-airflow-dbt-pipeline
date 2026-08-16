@@ -1,0 +1,29 @@
+version: 2
+
+sources:
+  - name: raw
+    database: CRYPTO_ANALYTICS_DB
+    schema: RAW
+    description: Raw landing zone, written by Airflow's load_to_snowflake task. Not touched by dbt.
+    tables:
+      - name: crypto_prices_raw
+        description: >
+          Append-only log of CoinGecko price snapshots. One row per coin per
+          DAG run (no dedup at this layer) — dedup/upsert happens downstream
+          in stg_crypto_prices via incremental merge.
+        columns:
+          - name: coin_id
+            description: CoinGecko's canonical coin identifier (e.g. 'bitcoin').
+          - name: symbol
+            description: Ticker symbol (e.g. 'btc').
+          - name: price_usd
+            description: Spot price in USD at fetch time.
+          - name: market_cap_usd
+            description: Market cap in USD at fetch time.
+          - name: price_change_pct_24h
+            description: >
+              CoinGecko's own trailing 24h % change, computed off their live
+              data at fetch time. Not the same as our day-over-day change —
+              see int_crypto_daily_change for that.
+          - name: fetched_at
+            description: Timestamp the Airflow fetch task ran, UTC.

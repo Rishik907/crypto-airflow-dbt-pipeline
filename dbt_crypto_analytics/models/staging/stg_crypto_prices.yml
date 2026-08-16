@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: stg_crypto_prices
+    description: >
+      One deduped row per coin per day. Incremental model with merge
+      strategy on price_id (coin_id + price_date) — same-day reruns update
+      the existing row rather than creating a duplicate.
+    columns:
+      - name: price_id
+        description: Surrogate key on coin_id + price_date. Unique.
+        tests:
+          - unique
+          - not_null
+      - name: coin_id
+        tests:
+          - not_null
+      - name: price_date
+        tests:
+          - not_null
+      - name: price_usd
+        tests:
+          - not_null
