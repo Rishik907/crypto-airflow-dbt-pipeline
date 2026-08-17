@@ -2,8 +2,7 @@
 Load task: takes the rows fetched by fetch_prices and writes them into
 CRYPTO_ANALYTICS_DB.RAW.CRYPTO_PRICES_RAW.
 
-Table is created on first run if it doesn't exist. Same account as P2
-(DJPBQEV-CK77560), new database.
+Table is created on first run if it doesn't exist. 
 """
 import os
 
